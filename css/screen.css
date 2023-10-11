@@ -199,8 +199,16 @@ body{
     font-family: 'WorkSans', sans-serif;
     background-color: var(--color-back);
     color: var(--color-front);
+    opacity: 0;
+    transition: all 0.5s ease-in-out;
+    transform: scale(0);
 }
 
+body.is-loaded{
+    opacity: 1;
+    transform: scale(1);
+    
+}
 /*------------------------------------*\
 #OBJECTS
 \*------------------------------------*/

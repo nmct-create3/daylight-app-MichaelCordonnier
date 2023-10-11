@@ -14,10 +14,11 @@ function _parseMillisecondsIntoReadableTime(timestamp) {
 }
 
 // 5 TODO: maak updateSun functie
-const updateSun = (sunElement) => {
-  
-
-  
+const updateSun = (sunElement, percentage, currentTime) => {
+  sunElement.style.left = percentage + "%";
+  sunElement.style.bottom = 100 - percentage + "%";
+  sunElement.setAttribute("data-time", currentTime);
+  document.body.classList.add("is-loaded");
 };
 
 // 4 Zet de zon op de juiste plaats en zorg ervoor dat dit iedere minuut gebeurt.
@@ -32,43 +33,57 @@ let placeSunAndStartMoving = (totalMinutes, sunrise) => {
   // Bekijk of de zon niet nog onder of reeds onder is
   // Anders kunnen we huidige waarden evalueren en de zon updaten via de updateSun functie.
   // PS.: vergeet weer niet om het resterend aantal minuten te updaten en verhoog het aantal verstreken minuten.
+
   const sunHtml = document.querySelector(".js-sun");
   const minutesLeftHtml = document.querySelector(".js-time-left");
 
-  const now = new Date();
+  // Initializeren van waardes
+  let now, currentHour, currentMinute, totalMinutesPassed, minutesSunLeft, timeNow, percentage;
 
-  
+  // Zal functie om de minute herhalen, maar zal het ook 1 malig initialiseren
+  function repeatEveryMinute() {
+    // Huidige tijd (hereberekenen)
+    now = new Date();
 
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const totalMinutesPassed = currentHour * 60 + currentMinute;
+    currentHour = now.getHours();
+    currentMinute = now.getMinutes();
+    totalMinutesPassed = currentHour * 60 + currentMinute;
 
-  
+    // Hoeveel minuten zon er nog over blijft (hebereken)
+    minutesSunLeft = sunsetInMinutes - totalMinutesPassed;
 
+    // Welke tijd het nu is (herbereken)
+    timeNow = currentHour + ":" + currentMinute;
 
+    percentage = ((totalMinutesPassed - sunriseInMinutes) / (sunsetInMinutes - sunriseInMinutes)) * 100;
+
+    // Hier komt functie om de zon te updaten
+    if (totalMinutesPassed > sunriseInMinutes && totalMinutesPassed < sunsetInMinutes) {
+      minutesLeftHtml.innerHTML = minutesSunLeft;
+      updateSun(sunHtml, percentage, timeNow);
+      
+    } else {
+      document.querySelector("html").classList.add("is-night");
+      document.querySelector(".c-app__summary").innerHTML = "De zon is onder, we gaan slapen!";
+    }
+  }
+
+  // Vaste waardes moeten maar 1 keer berekend worden
+  // zon omhoog in minuten (niet herberekenen)
   const sunriseDateFormat = new Date(sunrise * 1000);
   const sunriseInMinutes = sunriseDateFormat.getHours() * 60 + sunriseDateFormat.getMinutes();
 
-  const sunsetInMinutes  = Math.round(sunriseInMinutes + totalMinutes);
+  // zon omlaag in minuten (niet herberekenen)
+  const sunsetInMinutes = Math.round(sunriseInMinutes + totalMinutes);
 
+  // Initialisatie van waardes
+  repeatEveryMinute();
+  // Om de minuut zal de functie repeatEveryMinute uitgevoerd worden
+  setInterval(repeatEveryMinute, 60000);
 
+  
 
-  const minutesSunLeft = sunsetInMinutes - totalMinutesPassed;
-  const timeNow = currentHour + ":" + currentMinute;
-
-  console.log(timeNow);
-
-  sunHtml.dataset.time = timeNow;
-
-  if (totalMinutesPassed > sunriseInMinutes && totalMinutesPassed < sunsetInMinutes) {
-    const percentage = ((totalMinutesPassed - sunriseInMinutes) / (sunsetInMinutes - sunriseInMinutes)) * 100;
-    sunHtml.style.left = percentage + "%";
-    sunHtml.style.bottom = percentage + "%";
-    minutesLeftHtml.innerHTML = minutesSunLeft;
-  } else {
-    document.querySelector("html").classList.add("is-night");
-    document.querySelector(".c-app__summary").innerHTML = "De zon is onder, we gaan slapen!";
-  }
+  
 };
 // 3 Met de data van de API kunnen we de app opvullen
 let showResult = (queryResponse) => {
@@ -94,7 +109,7 @@ let showResult = (queryResponse) => {
   const differenceInMinutes = (queryResponse.city.sunset - queryResponse.city.sunrise) / 60;
 
   const timeSunrise = queryResponse.city.sunrise;
-  
+
   placeSunAndStartMoving(differenceInMinutes, timeSunrise);
 };
 
